@@ -126,10 +126,21 @@ newEntry desc id =
     , id = id
     }
 
+type alias Date =
+  { year : Int
+  , month : Int
+  , dayOfMonth : Int }
 
-init : Maybe SerializedModel -> ( Model, Cmd Msg )
-init maybeModel =
-  ( deserialize (Maybe.withDefault emptyModel maybeModel)
+type alias Flags =
+  { model : Maybe SerializedModel
+  , currentDate : Date }
+
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+  let
+      loadedModel = deserialize (Maybe.withDefault emptyModel flags.model)
+  in
+  ( -- TODO 
   , Cmd.none
   )
 
