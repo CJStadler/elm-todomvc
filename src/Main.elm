@@ -133,6 +133,7 @@ type alias Entry =
     , completed : Bool
     , editing : Bool
     , id : Int
+    , date : Date
     }
 
 
@@ -145,12 +146,13 @@ emptyModel =
     }
 
 
-newEntry : String -> Int -> Entry
-newEntry desc id =
+newEntry : String -> Int -> Date -> Entry
+newEntry desc id date =
     { description = desc
     , completed = False
     , editing = False
     , id = id
+    , date = date
     }
 
 
@@ -214,7 +216,11 @@ update msg model =
                         model.entries
 
                     else
-                        model.entries ++ [ newEntry model.field model.uid ]
+                        model.entries
+                            ++ [ newEntry model.field
+                                    model.uid
+                                    model.currentDate
+                               ]
               }
             , Cmd.none
             )
