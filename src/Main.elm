@@ -175,9 +175,9 @@ type Msg
     | UpdateEntry Int String
     | Add
     | Delete Int
-    | DeleteComplete
+    | DeleteComplete Date
     | Check Int Bool
-    | CheckAll Bool
+    | CheckAll Date Bool
     | ChangeVisibility Visibility
 
 
@@ -251,7 +251,7 @@ update msg model =
             , Cmd.none
             )
 
-        DeleteComplete ->
+        DeleteComplete date ->
             ( { model | entries = List.filter (not << Entry.completed) model.entries }
             , Cmd.none
             )
@@ -269,7 +269,7 @@ update msg model =
             , Cmd.none
             )
 
-        CheckAll isCompleted ->
+        CheckAll date isCompleted ->
             let
                 updateEntry t =
                     Entry.update (Entry.Completed isCompleted) t
@@ -356,7 +356,7 @@ viewEntryList : Date -> Visibility -> Maybe EntryId -> List Entry -> Html Msg
 viewEntryList currentDate visibility editingId entries =
     let
         onCurrentDate =
-            \todo -> Date.compare currentDate (Entry.date todo) == EQ
+            Entry.onDate currentDate
 
         currentEntries =
             List.filter onCurrentDate entries
@@ -411,7 +411,7 @@ viewEntries visibility editingId entries =
             , type_ "checkbox"
             , name "toggle"
             , checked allCompleted
-            , onClick (CheckAll (not allCompleted))
+            , onClick (CheckAll currentDate (not allCompleted))
             ]
             []
         , label

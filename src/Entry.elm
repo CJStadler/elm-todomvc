@@ -8,6 +8,7 @@ module Entry exposing
     , deserialize
     , id
     , new
+    , onDate
     , serialize
     , update
     )
@@ -68,6 +69,11 @@ id (Entry r) =
 date : Entry -> Date
 date (Entry r) =
     r.date
+
+
+onDate : Date -> Entry -> Bool
+onDate d entry =
+    Date.compare d (date entry) == EQ
 
 
 update : Update -> Entry -> Entry
