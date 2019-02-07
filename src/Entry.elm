@@ -1,7 +1,7 @@
 module Entry exposing
     ( Entry
+    , Msg(..)
     , Serialized
-    , Update(..)
     , completed
     , date
     , description
@@ -16,14 +16,12 @@ module Entry exposing
 import Date exposing (Date)
 
 
+
+-- MODEL
+
+
 type Entry
     = Entry Record
-
-
-type Update
-    = Description String
-    | Completed Bool
-    | Editing Bool
 
 
 type alias Record =
@@ -80,19 +78,6 @@ date (Entry r) =
     r.date
 
 
-update : Update -> Entry -> Entry
-update change (Entry r) =
-    case change of
-        Description d ->
-            Entry { r | description = d }
-
-        Completed c ->
-            Entry { r | completed = c }
-
-        Editing e ->
-            Entry { r | editing = e }
-
-
 serialize : Entry -> Serialized
 serialize (Entry r) =
     { description = r.description
@@ -112,3 +97,36 @@ deserialize e =
         , id = e.id
         , date = Date.fromRataDie e.date
         }
+
+
+
+-- UPDATE
+
+
+type Msg
+    = Description String
+    | Completed Bool
+    | Editing Bool
+
+
+update : Msg -> Entry -> ( Entry, Cmd Msg )
+update change (Entry r) =
+    case change of
+        Description d ->
+            ( Entry { r | description = d }
+            , Cmd.none
+            )
+
+        Completed c ->
+            ( Entry { r | completed = c }
+            , Cmd.none
+            )
+
+        Editing e ->
+            --            let
+            --               focus =
+            --                  Dom.focus ("todo-" ++ String.fromInt id)
+            --         in
+            ( Entry { r | editing = e }
+            , Cmd.none
+            )

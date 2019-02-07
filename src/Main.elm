@@ -163,12 +163,10 @@ type Msg
     = NoOp
     | SetDate Date
     | UpdateField String
-    | EditingEntry Int Bool
-    | UpdateEntry Int String
+    | UpdateEntry Int Entry.Msg
     | Add
     | Delete Int
     | DeleteComplete
-    | Check Int Bool
     | CheckAll Bool
     | ChangeVisibility Visibility
 
@@ -211,29 +209,24 @@ update msg model =
             , Cmd.none
             )
 
-        EditingEntry id isEditing ->
+        UpdateEntry id entryMsg ->
             let
-                operation entry =
+                updateIdEq entry =
                     if Entry.id entry == id then
-                        Entry.update (Entry.Editing isEditing) entry
+                        --                        let
+                        --                          ( newEntry, cmd ) =
+                        Entry.update entryMsg entry
+                        --                     in
+                        --                    ( newEntry, UpdateEntry (Entry.id entry) cmd )
 
                     else
-                        entry
+                        ( entry, Cmd.none )
 
-                focus =
-                    Dom.focus ("todo-" ++ String.fromInt id)
+                ( entries, cmds ) =
+                    List.unzip (List.map updateIdEq model.entries)
             in
-            ( { model | entries = List.map operation model.entries }
-            , Task.attempt (\_ -> NoOp) focus
-            )
-
-        UpdateEntry id task ->
-            let
-                operation =
-                    Entry.update (Entry.Description task)
-            in
-            ( { model | entries = List.map operation model.entries }
-            , Cmd.none
+            ( { model | entries = entries }
+            , cmds
             )
 
         Delete id ->
@@ -243,19 +236,6 @@ update msg model =
 
         DeleteComplete ->
             ( { model | entries = List.filter (not << Entry.completed) model.entries }
-            , Cmd.none
-            )
-
-        Check id isCompleted ->
-            let
-                updateEntry t =
-                    if Entry.id t == id then
-                        Entry.update (Entry.Completed isCompleted) t
-
-                    else
-                        t
-            in
-            ( { model | entries = List.map updateEntry model.entries }
             , Cmd.none
             )
 
@@ -419,11 +399,15 @@ viewEntry todo =
                 [ class "toggle"
                 , type_ "checkbox"
                 , checked (Entry.completed todo)
-                , onClick (Check (Entry.id todo) (not (Entry.completed todo)))
+                , onClick
+                    (UpdateEntry
+                        (Entry.id todo)
+                        (Entry.Completed (not (Entry.completed todo)))
+                    )
                 ]
                 []
             , label
-                [ onDoubleClick (EditingEntry (Entry.id todo) True) ]
+                [ onDoubleClick (UpdateEntry (Entry.id todo) (Entry.Editing True)) ]
                 [ text (Entry.description todo) ]
             , button
                 [ class "destroy"
@@ -436,9 +420,10 @@ viewEntry todo =
             , value (Entry.description todo)
             , name "title"
             , id ("todo-" ++ String.fromInt (Entry.id todo))
-            , onInput (UpdateEntry (Entry.id todo))
-            , onBlur (EditingEntry (Entry.id todo) False)
-            , onEnter (EditingEntry (Entry.id todo) False)
+            , onInput
+                (\text -> UpdateEntry (Entry.id todo) (Entry.Description text))
+            , onBlur (UpdateEntry (Entry.id todo) (Entry.Editing False))
+            , onEnter (UpdateEntry (Entry.id todo) (Entry.Editing False))
             ]
             []
         ]
