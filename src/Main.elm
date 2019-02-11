@@ -1,4 +1,4 @@
-port module Main exposing (Flags, Model, Msg(..), SerializedModel, emptyModel, infoFooter, init, initModel, main, onEnter, serialize, setStorage, update, updateWithStorage, view, viewHeader)
+port module Main exposing (Flags, Model, Msg(..), SerializedModel, emptyModel, infoFooter, init, initModel, main, serialize, setStorage, update, updateWithStorage, view, viewHeader)
 
 {-| TodoMVC implemented in Elm, using plain HTML and CSS for rendering.
 
@@ -17,6 +17,7 @@ import Browser
 import Date exposing (Date)
 import Entry exposing (Entry)
 import EntryList
+import Helpers exposing (onEnter)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -318,23 +319,6 @@ viewHeader currentDate todoStr =
             ]
             []
         ]
-
-
-
--- TODO: deduplicate in EntryList
-
-
-onEnter : Msg -> Attribute Msg
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.succeed msg
-
-            else
-                Json.fail "not ENTER"
-    in
-    on "keydown" (Json.andThen isEnter keyCode)
 
 
 

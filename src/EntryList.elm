@@ -6,6 +6,7 @@ module EntryList exposing (InternalMsg, Model, Msg(..), init, update, view, visi
 import Browser.Dom as Dom
 import Date exposing (Date)
 import Entry exposing (Entry)
+import Helpers exposing (onEnter)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -242,19 +243,6 @@ viewEntry config editing entry =
             ]
             []
         ]
-
-
-onEnter : Msg msg -> Attribute (Msg msg)
-onEnter msg =
-    let
-        isEnter code =
-            if code == 13 then
-                Json.succeed msg
-
-            else
-                Json.fail "not ENTER"
-    in
-    on "keydown" (Json.andThen isEnter keyCode)
 
 
 
