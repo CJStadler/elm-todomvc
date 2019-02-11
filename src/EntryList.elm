@@ -236,9 +236,7 @@ viewEntry config editing entry =
             , value (Entry.description entry)
             , name "title"
             , id ("todo-" ++ String.fromInt entryId)
-
-            -- TODO: clean up
-            , onInput (\s -> External (config.updateEntry entryId s))
+            , onInput (External << config.updateEntry entryId)
             , onBlur (Internal FinishEdit)
             , onEnter (Internal FinishEdit)
             ]
