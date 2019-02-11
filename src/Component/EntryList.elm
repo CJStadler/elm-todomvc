@@ -1,7 +1,7 @@
 -- Component representing a list of entries.
 
 
-module EntryList exposing (InternalMsg, Model, Msg(..), init, update, view, visibilityText)
+module Component.EntryList exposing (InternalMsg, Model, Msg(..), init, update, view, visibilityText)
 
 import Browser.Dom as Dom
 import Date exposing (Date)

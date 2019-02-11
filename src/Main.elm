@@ -14,9 +14,9 @@ this in <http://gnextIde.elm-lang.org/architecture/index.html>
 -}
 
 import Browser
+import Component.EntryList as EntryList
 import Date exposing (Date)
 import Entry exposing (Entry)
-import EntryList
 import Helpers exposing (onEnter)
 import Html exposing (..)
 import Html.Attributes exposing (..)
