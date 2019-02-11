@@ -1,4 +1,4 @@
-port module Main exposing (Flags, Model, Msg(..), SerializedModel, emptyModel, infoFooter, init, initModel, main, onEnter, serialize, setStorage, update, updateWithStorage, view, viewControls, viewControlsClear, viewControlsCount, viewControlsFilters, viewEntries, viewEntry, viewHeader, viewKeyedEntry, visibilitySwap, visibilityText)
+port module Main exposing (Flags, Model, Msg(..), SerializedModel, emptyModel, infoFooter, init, initModel, main, onEnter, serialize, setStorage, update, updateWithStorage, view, viewHeader)
 
 {-| TodoMVC implemented in Elm, using plain HTML and CSS for rendering.
 
@@ -17,7 +17,7 @@ import Browser
 import Browser.Dom as Dom
 import Date exposing (Date)
 import Entry exposing (Entry)
-import EntryList exposing (EntryList)
+import EntryList
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -68,7 +68,7 @@ serialize model =
     { entries = List.map Entry.serialize model.entries
     , field = model.field
     , nextId = model.nextId
-    , visibility = visibilityText model.visibility
+    , visibility = EntryList.visibilityText model.listState
     }
 
 
@@ -77,23 +77,12 @@ initModel flags =
     let
         serialized =
             Maybe.withDefault emptyModel flags.model
-
-        viz =
-            if visibilityText Active == serialized.visibility then
-                Active
-
-            else if visibilityText Completed == serialized.visibility then
-                Completed
-
-            else
-                All
     in
     { entries = List.map Entry.deserialize serialized.entries
     , field = serialized.field
     , nextId = serialized.nextId
-    , visibility = viz
-    , editingId = Maybe.Nothing
     , currentDate = Date.fromRataDie 0 -- TODO: Handle this better.
+    , listState = EntryList.init serialized.visibility
     }
 
 
@@ -106,9 +95,7 @@ type alias Model =
     { entries : List Entry
     , field : String
     , nextId : Entry.Id
-    , listState : EntryList
-    , visibility : Visibility
-    , editingId : Maybe Entry.Id
+    , listState : EntryList.Model
     , currentDate : Date
     }
 
@@ -146,7 +133,12 @@ type Msg
     | SetDate Date
     | UpdateField String
     | Add
-    | EntryListMsg EntryList.Msg
+    | UpdateEntry Entry.Id String
+    | DeleteEntry Entry.Id
+    | DeleteComplete Date
+    | CheckEntry Entry.Id Bool
+    | CheckAll Date Bool
+    | EntryListMsg EntryList.InternalMsg
 
 
 
@@ -200,17 +192,21 @@ update msg model =
             , Cmd.none
             )
 
-        Delete id ->
+        DeleteEntry id ->
             ( { model | entries = List.filter (\t -> Entry.id t /= id) model.entries }
             , Cmd.none
             )
 
         DeleteComplete date ->
-            ( { model | entries = List.filter (not << Entry.completed) model.entries }
+            let
+                completedOnDate entry =
+                    Entry.completed entry && Entry.date entry == date
+            in
+            ( { model | entries = List.filter (not << completedOnDate) model.entries }
             , Cmd.none
             )
 
-        Check id isCompleted ->
+        CheckEntry id isCompleted ->
             let
                 updateEntry t =
                     if Entry.id t == id then
@@ -226,14 +222,18 @@ update msg model =
         CheckAll date isCompleted ->
             let
                 updateEntry t =
-                    Entry.update (Entry.Completed isCompleted) t
+                    if Entry.date t == date then
+                        Entry.update (Entry.Completed isCompleted) t
+
+                    else
+                        t
             in
             ( { model | entries = List.map updateEntry model.entries }
             , Cmd.none
             )
 
-        ChangeVisibility visibility ->
-            ( { model | visibility = visibility }
+        EntryListMsg m ->
+            ( { model | listState = EntryList.update m model.listState }
             , Cmd.none
             )
 
@@ -251,10 +251,38 @@ view model =
         [ section
             [ class "todoapp" ]
             [ lazy2 viewHeader model.currentDate model.field
-            , viewEntryList model.currentDate model.visibility model.editingId model.entries
+            , lazy viewEntryList model
             ]
         , infoFooter
         ]
+
+
+viewEntryList : Model -> Html Msg
+viewEntryList model =
+    let
+        entries =
+            List.filter (Entry.onDate model.currentDate) model.entries
+
+        config =
+            { check = CheckEntry
+            , checkAll = CheckAll model.currentDate
+            , updateEntry = UpdateEntry
+            , delete = DeleteEntry
+            , deleteComplete = DeleteComplete model.currentDate
+            }
+
+        html =
+            EntryList.view config model.listState entries
+
+        toMsg msg =
+            case msg of
+                EntryList.External m ->
+                    m
+
+                EntryList.Internal m ->
+                    EntryListMsg m
+    in
+    Html.map toMsg html
 
 
 viewHeader : Date -> String -> Html Msg
@@ -287,6 +315,10 @@ viewHeader currentDate todoStr =
             ]
             []
         ]
+
+
+
+-- TODO: deduplicate in EntryList
 
 
 onEnter : Msg -> Attribute Msg
