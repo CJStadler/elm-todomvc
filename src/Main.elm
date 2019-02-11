@@ -14,7 +14,6 @@ this in <http://gnextIde.elm-lang.org/architecture/index.html>
 -}
 
 import Browser
-import Browser.Dom as Dom
 import Date exposing (Date)
 import Entry exposing (Entry)
 import EntryList
@@ -233,8 +232,12 @@ update msg model =
             )
 
         EntryListMsg m ->
-            ( { model | listState = EntryList.update m model.listState }
-            , Cmd.none
+            let
+                ( newState, cmd ) =
+                    EntryList.update m model.listState
+            in
+            ( { model | listState = newState }
+            , Cmd.map EntryListMsg cmd
             )
 
 

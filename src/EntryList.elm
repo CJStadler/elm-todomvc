@@ -3,6 +3,7 @@
 
 module EntryList exposing (InternalMsg, Model, Msg(..), init, update, view, visibilityText)
 
+import Browser.Dom as Dom
 import Date exposing (Date)
 import Entry exposing (Entry)
 import Html exposing (..)
@@ -11,6 +12,7 @@ import Html.Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
 import Json.Decode as Json
+import Task
 
 
 
@@ -79,28 +81,36 @@ type Msg ext
 type
     InternalMsg
     -- Changes to the UI state.
-    = EditingEntry Entry.Id
+    = NoOp
+    | EditingEntry Entry.Id
     | FinishEdit
     | ChangeVisibility Visibility
 
 
-update : InternalMsg -> Model -> Model
+update : InternalMsg -> Model -> ( Model, Cmd InternalMsg )
 update msg (Model r) =
     case msg of
-        EditingEntry id ->
-            -- TODO: handle focus
-            -- let
-            --   focus =
-            --       Dom.focus ("todo-" ++ String.fromInt id)
-            -- in
-            Model { r | editingId = Maybe.Just id }
+        NoOp ->
+            ( Model r, Cmd.none )
 
-        -- Task.attempt (\_ -> NoOp) focus
+        EditingEntry id ->
+            let
+                focus =
+                    Dom.focus ("todo-" ++ String.fromInt id)
+            in
+            ( Model { r | editingId = Maybe.Just id }
+            , Task.attempt (\_ -> NoOp) focus
+            )
+
         FinishEdit ->
-            Model { r | editingId = Maybe.Nothing }
+            ( Model { r | editingId = Maybe.Nothing }
+            , Cmd.none
+            )
 
         ChangeVisibility viz ->
-            Model { r | visibility = viz }
+            ( Model { r | visibility = viz }
+            , Cmd.none
+            )
 
 
 
