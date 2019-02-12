@@ -25,7 +25,10 @@ importEntriesSince from to entries =
     -- Move incomplete entries on or after `from` to `to`.
     let
         updateIfInRange e =
-            if Date.isBetween from to (Entry.date e) then
+            if
+                not (Entry.completed e)
+                    && Date.isBetween from to (Entry.date e)
+            then
                 Entry.new (Entry.description e) (Entry.id e) to
 
             else

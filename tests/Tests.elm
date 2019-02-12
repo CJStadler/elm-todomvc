@@ -24,7 +24,7 @@ suite =
                 in
                 importEntriesSince date date entries
                     |> Expect.equal entries
-        , test "Updates entries from `from` date" <|
+        , test "Updates incomplete entries from `from` date" <|
             \_ ->
                 let
                     from =
@@ -37,17 +37,21 @@ suite =
                         [ Entry.new "Foo" 1 (Date.fromRataDie 122)
                         , Entry.new "Foo" 2 (Date.fromRataDie 123)
                         , Entry.new "Foo" 3 (Date.fromRataDie 124)
+                        , Entry.new "Foo" 4 (Date.fromRataDie 123)
+                            |> Entry.update (Entry.Completed True)
                         ]
 
                     expected =
                         [ Entry.new "Foo" 1 (Date.fromRataDie 122)
                         , Entry.new "Foo" 2 (Date.fromRataDie 124)
                         , Entry.new "Foo" 3 (Date.fromRataDie 124)
+                        , Entry.new "Foo" 4 (Date.fromRataDie 123)
+                            |> Entry.update (Entry.Completed True)
                         ]
                 in
                 importEntriesSince from to entries
                     |> Expect.equal expected
-        , test "Updates entries between `from` and `to`" <|
+        , test "Updates incomplete entries between `from` and `to`" <|
             \_ ->
                 let
                     from =
@@ -60,12 +64,16 @@ suite =
                         [ Entry.new "Foo" 1 (Date.fromRataDie 122)
                         , Entry.new "Foo" 2 (Date.fromRataDie 123)
                         , Entry.new "Foo" 3 (Date.fromRataDie 124)
+                        , Entry.new "Foo" 4 (Date.fromRataDie 123)
+                            |> Entry.update (Entry.Completed True)
                         ]
 
                     expected =
                         [ Entry.new "Foo" 1 (Date.fromRataDie 124)
                         , Entry.new "Foo" 2 (Date.fromRataDie 124)
                         , Entry.new "Foo" 3 (Date.fromRataDie 124)
+                        , Entry.new "Foo" 4 (Date.fromRataDie 123)
+                            |> Entry.update (Entry.Completed True)
                         ]
                 in
                 importEntriesSince from to entries
