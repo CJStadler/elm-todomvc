@@ -83,7 +83,7 @@ initModel flags =
     { entries = List.map Entry.deserialize serialized.entries
     , field = serialized.field
     , nextId = serialized.nextId
-    , currentDate = Date.fromRataDie 0 -- TODO: Handle this better.
+    , activeDate = Date.fromRataDie 0 -- TODO: Handle this better.
     , previousOpenedDate = Date.fromRataDie serialized.previousOpenedRataDie
     , listState = EntryList.init serialized.visibility
     }
@@ -99,7 +99,7 @@ type alias Model =
     , field : String
     , nextId : Entry.Id
     , listState : EntryList.Model
-    , currentDate : Date
+    , activeDate : Date
     , previousOpenedDate : Date -- The last date the application was opened.
     }
 
@@ -157,7 +157,7 @@ update msg model =
             ( model, Cmd.none )
 
         SetDate date ->
-            ( { model | currentDate = date }
+            ( { model | activeDate = date }
             , Cmd.none
             )
 
@@ -173,7 +173,7 @@ update msg model =
                         model.entries
                             ++ [ Entry.new model.field
                                     model.nextId
-                                    model.currentDate
+                                    model.activeDate
                                ]
               }
             , Cmd.none
@@ -259,7 +259,7 @@ view model =
         ]
         [ section
             [ class "todoapp" ]
-            [ lazy2 viewHeader model.currentDate model.field
+            [ lazy2 viewHeader model.activeDate model.field
             , lazy viewEntryList model
             ]
         , infoFooter
@@ -270,14 +270,14 @@ viewEntryList : Model -> Html Msg
 viewEntryList model =
     let
         entries =
-            List.filter (Entry.onDate model.currentDate) model.entries
+            List.filter (Entry.onDate model.activeDate) model.entries
 
         config =
             { check = CheckEntry
-            , checkAll = CheckAll model.currentDate
+            , checkAll = CheckAll model.activeDate
             , updateEntry = UpdateEntry
             , delete = DeleteEntry
-            , deleteComplete = DeleteComplete model.currentDate
+            , deleteComplete = DeleteComplete model.activeDate
             }
 
         html =
@@ -295,16 +295,16 @@ viewEntryList model =
 
 
 viewHeader : Date -> String -> Html Msg
-viewHeader currentDate todoStr =
+viewHeader activeDate todoStr =
     let
         dateString =
-            Date.format "MMM ddd, y" currentDate
+            Date.format "MMM ddd, y" activeDate
 
         previousDay =
-            SetDate (Date.add Date.Days -1 currentDate)
+            SetDate (Date.add Date.Days -1 activeDate)
 
         nextDay =
-            SetDate (Date.add Date.Days 1 currentDate)
+            SetDate (Date.add Date.Days 1 activeDate)
     in
     header
         [ class "header" ]
