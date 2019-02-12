@@ -176,17 +176,26 @@ update msg model =
 
         ImportPrevious shouldImport ->
             let
-                updatedEntries =
-                    if shouldImport then
-                        importEntriesSince model.lastOpenedDate model.todayDate model.entries
+                updated =
+                    case model.todayDate of
+                        Just today ->
+                            let
+                                updatedEntries =
+                                    if shouldImport then
+                                        importEntriesSince model.lastOpenedDate today model.entries
 
-                    else
-                        model.entries
+                                    else
+                                        model.entries
+                            in
+                            { model
+                                | lastOpenedDate = today
+                                , entries = updatedEntries
+                            }
+
+                        Nothing ->
+                            model
             in
-            ( { model
-                | lastOpenedDate = model.todayDate
-                , entries = updatedEntries
-              }
+            ( updated
             , Cmd.none
             )
 
@@ -287,13 +296,23 @@ setActiveDate model date =
 
 view : Model -> Html Msg
 view model =
+    let
+        importPrompt =
+            case model.todayDate of
+                Just d ->
+                    lazy3 viewImportPrompt model.lastOpenedDate d model.entries
+
+                Nothing ->
+                    div [] []
+    in
     div
         [ class "todomvc-wrapper"
         , style "visibility" "hidden"
         ]
         [ section
             [ class "todoapp" ]
-            [ lazy2 viewHeader model.activeDate model.field
+            [ importPrompt
+            , lazy2 viewHeader model.activeDate model.field
             , lazy viewEntryList model
             ]
         , infoFooter
@@ -360,8 +379,45 @@ viewHeader activeDate todoStr =
         ]
 
 
+viewImportPrompt : Date -> Date -> List Entry -> Html Msg
+viewImportPrompt lastOpened today entries =
+    let
+        entryCount =
+            if lastOpened == today || List.isEmpty entries then
+                0
 
--- VIEW ALL ENTRIES
+            else
+                let
+                    yesterday =
+                        Date.add Date.Days -1 today
+                in
+                -- TODO: extract this selection pipeline
+                entries
+                    |> List.filter (not << Entry.completed)
+                    |> List.map Entry.date
+                    |> List.filter (Date.isBetween lastOpened yesterday)
+                    |> List.length
+
+        contents =
+            if entryCount == 0 then
+                []
+
+            else
+                [ text (promptString lastOpened entryCount)
+                , button [ onClick (ImportPrevious True) ] [ text "Yes" ]
+                , button [ onClick (ImportPrevious False) ] [ text "no" ]
+                ]
+    in
+    div [] contents
+
+
+promptString : Date -> Int -> String
+promptString from count =
+    "Import incomplete entries since "
+        ++ Date.format "MM/dd/yy" from
+        ++ " ("
+        ++ String.fromInt count
+        ++ " entries)?"
 
 
 infoFooter : Html msg
