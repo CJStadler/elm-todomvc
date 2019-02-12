@@ -17,7 +17,7 @@ import Browser
 import Component.EntryList as EntryList
 import Date exposing (Date)
 import Entry exposing (Entry)
-import Helpers exposing (onEnter)
+import Helpers exposing (importEntriesSince, onEnter)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -60,7 +60,7 @@ type alias SerializedModel =
     , field : String
     , nextId : Int
     , visibility : String
-    , previousOpenedRataDie : Int
+    , lastOpenedRataDie : Int
     }
 
 
@@ -70,7 +70,7 @@ serialize model =
     , field = model.field
     , nextId = model.nextId
     , visibility = EntryList.visibilityText model.listState
-    , previousOpenedRataDie = Date.toRataDie model.previousOpenedDate
+    , lastOpenedRataDie = Date.toRataDie model.lastOpenedDate
     }
 
 
@@ -84,7 +84,8 @@ initModel flags =
     , field = serialized.field
     , nextId = serialized.nextId
     , activeDate = Date.fromRataDie 0 -- TODO: Handle this better.
-    , previousOpenedDate = Date.fromRataDie serialized.previousOpenedRataDie
+    , todayDate = Maybe.Nothing
+    , lastOpenedDate = Date.fromRataDie serialized.lastOpenedRataDie
     , listState = EntryList.init serialized.visibility
     }
 
@@ -100,7 +101,8 @@ type alias Model =
     , nextId : Entry.Id
     , listState : EntryList.Model
     , activeDate : Date
-    , previousOpenedDate : Date -- The last date the application was opened.
+    , todayDate : Maybe Date
+    , lastOpenedDate : Date -- The last date the application was opened.
     }
 
 
@@ -110,7 +112,7 @@ emptyModel =
     , visibility = "All"
     , field = ""
     , nextId = 0
-    , previousOpenedRataDie = 0
+    , lastOpenedRataDie = 0
     }
 
 
@@ -121,7 +123,7 @@ type alias Flags =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     ( initModel flags
-    , Task.perform SetDate Date.today
+    , Task.perform SetToday Date.today
     )
 
 
@@ -135,7 +137,9 @@ to them.
 -}
 type Msg
     = NoOp
+    | SetToday Date
     | SetDate Date
+    | ImportPrevious Bool
     | UpdateField String
     | Add
     | UpdateEntry Entry.Id String
@@ -156,8 +160,33 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        SetToday date ->
+            let
+                updatedModel =
+                    setActiveDate model date
+            in
+            ( { updatedModel | todayDate = Maybe.Just date }
+            , Cmd.none
+            )
+
         SetDate date ->
-            ( { model | activeDate = date }
+            ( setActiveDate model date
+            , Cmd.none
+            )
+
+        ImportPrevious shouldImport ->
+            let
+                updatedEntries =
+                    if shouldImport then
+                        importEntriesSince model.lastOpenedDate model.todayDate model.entries
+
+                    else
+                        model.entries
+            in
+            ( { model
+                | lastOpenedDate = model.todayDate
+                , entries = updatedEntries
+              }
             , Cmd.none
             )
 
@@ -245,6 +274,11 @@ update msg model =
             ( { model | listState = newState }
             , Cmd.map EntryListMsg cmd
             )
+
+
+setActiveDate : Model -> Date -> Model
+setActiveDate model date =
+    { model | activeDate = date }
 
 
 
