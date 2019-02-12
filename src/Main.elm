@@ -60,6 +60,7 @@ type alias SerializedModel =
     , field : String
     , nextId : Int
     , visibility : String
+    , previousOpenedRataDie : Int
     }
 
 
@@ -69,6 +70,7 @@ serialize model =
     , field = model.field
     , nextId = model.nextId
     , visibility = EntryList.visibilityText model.listState
+    , previousOpenedRataDie = Date.toRataDie model.previousOpenedDate
     }
 
 
@@ -82,6 +84,7 @@ initModel flags =
     , field = serialized.field
     , nextId = serialized.nextId
     , currentDate = Date.fromRataDie 0 -- TODO: Handle this better.
+    , previousOpenedDate = Date.fromRataDie serialized.previousOpenedRataDie
     , listState = EntryList.init serialized.visibility
     }
 
@@ -97,6 +100,7 @@ type alias Model =
     , nextId : Entry.Id
     , listState : EntryList.Model
     , currentDate : Date
+    , previousOpenedDate : Date -- The last date the application was opened.
     }
 
 
@@ -106,6 +110,7 @@ emptyModel =
     , visibility = "All"
     , field = ""
     , nextId = 0
+    , previousOpenedRataDie = 0
     }
 
 
