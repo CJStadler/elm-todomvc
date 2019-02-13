@@ -17,12 +17,13 @@ import Browser
 import Component.EntryList as EntryList
 import Date exposing (Date)
 import Entry exposing (Entry)
-import Helpers exposing (importEntriesSince, onEnter)
+import Helpers exposing (onEnter)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Html.Keyed as Keyed
 import Html.Lazy exposing (..)
+import ImportEntries exposing (filter, update)
 import Json.Decode as Json
 import Maybe
 import Task
@@ -182,7 +183,7 @@ update msg model =
                             let
                                 updatedEntries =
                                     if shouldImport then
-                                        importEntriesSince model.lastOpenedDate today model.entries
+                                        ImportEntries.update model.lastOpenedDate today model.entries
 
                                     else
                                         model.entries
@@ -383,20 +384,8 @@ viewImportPrompt : Date -> Date -> List Entry -> Html Msg
 viewImportPrompt lastOpened today entries =
     let
         entryCount =
-            if lastOpened == today || List.isEmpty entries then
-                0
-
-            else
-                let
-                    yesterday =
-                        Date.add Date.Days -1 today
-                in
-                -- TODO: extract this selection pipeline
-                entries
-                    |> List.filter (not << Entry.completed)
-                    |> List.map Entry.date
-                    |> List.filter (Date.isBetween lastOpened yesterday)
-                    |> List.length
+            ImportEntries.filter lastOpened today entries
+                |> List.length
 
         contents =
             if entryCount == 0 then
